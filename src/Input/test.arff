@@ -1,0 +1,14 @@
+--Class={1,2,3,5}
+--No of features = 6
+
+@relation studnet
+
+@attribute age numeric
+@attribute class numeric
+@attribute sex nominal{M,F}
+@attribute percentage numeric
+
+@data
+1,2,M,4
+2,3.9,F,4
+2,3,M,5
