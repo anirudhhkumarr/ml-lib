@@ -35,6 +35,12 @@ instance Show AttributeInfo where
 	show (NOMINAL x) = show x
 
 trainData::[Attribute]->[BS.ByteString]->[[AttributeValue]]->[[AttributeInfo]]
+trainData attributesInfo (first:rest) input = (classInfo : (trainData attributesInfo rest restClassData))
+										      where
+											    intialInfo = intialize attributesInfo 						
+ 						      					(classInfo,restClassData) = trainClass intialInfo first input 0 				      
+trainData _ _ [] = []
+
 
 parseARFF input = parse arff input    
 
