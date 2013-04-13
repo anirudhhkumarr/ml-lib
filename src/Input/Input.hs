@@ -36,27 +36,26 @@ instance Show AttributeInfo where
 
 trainData::[Attribute]->[BS.ByteString]->[[AttributeValue]]->[[AttributeInfo]]
 trainData attributesInfo (first:rest) input = (classInfo : (trainData attributesInfo rest restClassData))
-										      where
+			 							      where
 											    intialInfo = intialize attributesInfo 						
  						      					(classInfo,restClassData) = trainClass intialInfo first input 0 				      
 trainData _ _ [] = []
 
 intialize::[Attribute]->[AttributeInfo]
-
 intialize = map foo
 
-
 foo::Attribute->AttributeInfo
-
 foo a =  case (dataType a) of Nominal xs -> NOMINAL $ intializeNominal xs
-
-		              Numeric -> NUMERIC (0.0,0.0)
-
+							  Numeric -> NUMERIC (0.0,0.0)
 
 intializeNominal:: [BS.ByteString]->[(BS.ByteString,Double)]
-
 intializeNominal = map (\ x->(x,0))
 
+trainClass::[AttributeInfo]->BS.ByteString->[[AttributeValue]]->Double->([AttributeInfo],[[AttributeValue]])
+trainClass info first (x:xs) n 
+	|(last x) == (NominalValue first) = trainClass (updateClassInfo info $ init x) first xs (n+1)
+	| otherwise  = (finalizeInfo info n,x:xs)
+trainClass info _ [] n = (finalizeInfo info n,[])
 
 parseARFF input = parse arff input    
 
