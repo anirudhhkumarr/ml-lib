@@ -41,6 +41,22 @@ trainData attributesInfo (first:rest) input = (classInfo : (trainData attributes
  						      					(classInfo,restClassData) = trainClass intialInfo first input 0 				      
 trainData _ _ [] = []
 
+intialize::[Attribute]->[AttributeInfo]
+
+intialize = map foo
+
+
+foo::Attribute->AttributeInfo
+
+foo a =  case (dataType a) of Nominal xs -> NOMINAL $ intializeNominal xs
+
+		              Numeric -> NUMERIC (0.0,0.0)
+
+
+intializeNominal:: [BS.ByteString]->[(BS.ByteString,Double)]
+
+intializeNominal = map (\ x->(x,0))
+
 
 parseARFF input = parse arff input    
 
