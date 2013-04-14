@@ -27,9 +27,11 @@ instance Ord AttributeValue where
 instance Eq AttributeValue where
     (NumericValue a) == (NumericValue b) =  a == b
     (NominalValue a) == (NominalValue b) =  a == b
+
 --Classifer
 data AttributeInfo = NUMERIC (Double,Double)
                     |NOMINAL [(BS.ByteString,Double)]--[(Nominal,count)]
+
 instance Show AttributeInfo where
     show (NUMERIC x) = show x
     show (NOMINAL x) = show x
@@ -51,6 +53,12 @@ foo a =case (dataType a) of Nominal xs -> NOMINAL $ intializeNominal xs
 intializeNominal:: [BS.ByteString]->[(BS.ByteString,Double)]
 intializeNominal = map (\ x->(x,0))
 
+trainClass::[AttributeInfo]->BS.ByteString->[[AttributeValue]]->Double->([AttributeInfo],[[AttributeValue]])
+trainClass info first (x:xs) n 
+    |(last x) == (NominalValue first) = trainClass (updateClassInfo info $ init x) first xs (n+1)
+    | otherwise  = (finalizeInfo info n,x:xs)
+trainClass info _ [] n = (finalizeInfo info n,[])
+
 
 parseARFF input = parse arff input    
 
@@ -69,3 +77,4 @@ main =do
             sortedInput = sortByClass inputData numAttributes	    
 	    print sortedInput	
 	    return ()
+
