@@ -41,7 +41,7 @@ trainData::[Attribute]->[BS.ByteString]->[[AttributeValue]]->[[AttributeInfo]]
 trainData attributesInfo (first:rest) input = (classInfo : (trainData attributesInfo rest restClassData))
                                               where
                                                 intialInfo = intialize attributesInfo
-                                                (classInfo,restClassData) = trainClass intialInfo first input 0 				      
+                                                (classInfo,restClassData) = trainClass intialInfo first input 0     			      
 trainData _ _ [] = []
 
 intialize::[Attribute]->[AttributeInfo]
@@ -73,6 +73,21 @@ updateNominal ((x1,x2):xs) bs
     | otherwise = (x1,x2):updateNominal xs bs
 updateNominal [] _ = []
 
+finalizeInfo::[AttributeInfo]->Double->[AttributeInfo]
+finalizeInfo ((NOMINAL x):xs) n = (NOMINAL $ mapSnd (/n) x):finalizeInfo xs n
+finalizeInfo ((NUMERIC (x1,x2)):xs) n = (NUMERIC (mu,sigma)):finalizeInfo xs n
+                                        where
+                                            mu = x1/n
+                                            sigma = (x2/n)-mu^2
+finalizeInfo [] _ = []
+
+mapSnd::(b->c)->[(a,b)]->[(a,c)]
+mapSnd f ((x1,x2):xs) = (x1,f x2):mapSnd f xs
+mapSnd _ [] = []
+
+mapFst::(a->c)->[(a,b)]->[(c,b)]
+mapFst f ((x1,x2):xs) = (f x1,x2):mapFst f xs
+mapFst _ [] = []
 
 parseARFF input = parse arff input    
 
