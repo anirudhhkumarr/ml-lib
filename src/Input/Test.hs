@@ -31,32 +31,47 @@ import Data.Function
 
 ----------------------------------------------------------------------------------------------------------------
 
-test::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (([AttributeValue],[BS.ByteString]))
-test (trainHeader,classifier) testFilePath = do 
-        					testHandle <- openFile testFilePath ReadMode
-        					testContents <- hGetContents testHandle
-        					let 
-							testInput = case (parseARFF $ pack testContents) of 
-	        				 			Partial k -> (k BS.empty)
-					      	 			x-> x
-	    						(testHeader,testdata) = case testInput of Done _ y ->y
-		    					--Drop data objects with one or more than missing feature value
-		    					inputData = map catMaybes testdata	
-		    					Nominal classes = dataType $ last $ attributes testHeader
-						return (map last inputData ,testData classifier $ map init inputData)
-						
+test:: (Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[BS.ByteString])))
+test (trainHeader,classifier) testFilePath = 
+    do 
+        testHandle <- openFile testFilePath ReadMode
+        testContents <- hGetContents testHandle
+        let
+            returnValue = 
+                case resultExpr of       
+                    Done _ k -> Right (map last inputData ,testData classifier $ map init inputData)
+                        where
+                            (testHeader,testdata) = k
+                            --Drop data objects with one or more than missing feature value
+                            inputData = map catMaybes testdata
+                            Nominal classes = dataType $ last $ attributes testHeader
+                    
+                    
+                    Fail remInput contexts msg ->
+                        Left ("In Test Data :\nRemaining input is :\n" ++ 
+                        (unpack remInput) ++ "Invalid row supplied :\n"++ 
+                        foldl (++) "" contexts)
+    
+                where
+                resultExpr = 
+                    case (parseARFF $ pack testContents) of
+                        Partial k -> (k BS.empty)
+                        k -> k        
+
+        return returnValue
+
 testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[BS.ByteString]
 testData classifier inputData = map (testObject classifier) inputData 
 
 testObject classifier object = fst $ last $ sortBy (compare `on` (snd)) $ map (foo object) classifier
-			       where 
-				foo object (classs,values) = (classs,computeProbability object values)
+                               where 
+                                foo object (classs,values) = (classs,computeProbability object values)
 
-computeProbability ((NominalValue a):xs) ((NOMINAL y):ys) = (lookup' a y) * (computeProbability xs ys)	
-computeProbability ((NumericValue a):xs) ((NUMERIC (mu,sigma)):ys) = 1/sqrt(2*pi*sigma^2)*exp(-(a-mu)^2/(2*sigma^2))*(computeProbability xs ys)	
+computeProbability ((NominalValue a):xs) ((NOMINAL y):ys) = (lookup' a y) * (computeProbability xs ys)  
+computeProbability ((NumericValue a):xs) ((NUMERIC (mu,sigma)):ys) = 1/sqrt(2*pi*sigma^2)*exp(-(a-mu)^2/(2*sigma^2))*(computeProbability xs ys) 
 computeProbability [] [] = 1.0
 
 lookup' a y = case Map.lookup a y of
-		Just x->x
+                Just x->x
 ------------------------------------------------------------------------------------------------------------
 
