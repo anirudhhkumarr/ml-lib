@@ -109,7 +109,7 @@ mapFst _ [] = []
 parseARFF input = parse arff input    
 
 sortByClass xs n = sortBy (compare `on` (!!(n-1))) xs  
-classify x y = do
+classify x = do
                 (header,classifier)<- train x
                 print classifier
                 return ()
