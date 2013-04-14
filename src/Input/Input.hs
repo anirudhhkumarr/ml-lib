@@ -37,6 +37,23 @@ instance Show AttributeInfo where
     show (NUMERIC x) = show x
     show (NOMINAL x) = show x
 
+train::FilePath->IO (Header,[(BS.ByteString,[AttributeInfo])])
+train testFilePath = do
+                        trainHandle <- openFile testFilePath ReadMode
+                        trainContents <- hGetContents trainHandle
+                        let 
+                           trainInput = case (parseARFF $ pack trainContents) of 
+                                          Partial k -> (k BS.empty)
+                                          x-> x
+                           (trainHeader,traindata) = case trainInput of Done _ y ->y
+                           --Drop data objects with one or more than missing feature value
+                           inputData = map catMaybes traindata	
+                           numAttributes = length $ attributes trainHeader
+                           Nominal classes = dataType $ last $ attributes trainHeader
+                           attributesInfo = attributes trainHeader	
+                           sortedInput = sortByClass inputData numAttributes
+                        return (trainHeader,zipWith (\ a b ->(a,b)) classes $ trainData attributesInfo (sort classes) sortedInput)	
+
 trainData::[Attribute]->[BS.ByteString]->[[AttributeValue]]->[[AttributeInfo]]
 trainData attributesInfo (first:rest) input = (classInfo : (trainData attributesInfo rest restClassData))
                                               where
@@ -92,17 +109,3 @@ mapFst _ [] = []
 parseARFF input = parse arff input    
 
 sortByClass xs n = sortBy (compare `on` (!!(n-1))) xs  
-
-main =do
-        handle <- openFile "arff.arff" ReadMode
-        contents <- hGetContents handle
-        let input = case (parseARFF $ pack contents) of Partial k -> (k BS.empty)
-                                                        x-> x
-            (_header,_data) = case input of Done _ y ->y
-            inputData = map catMaybes _data	
-            numAttributes = length $ attributes _header
-            Nominal classes = dataType $ last $ attributes _header
-            attributesInfo = attributes _header	
-            sortedInput = sortByClass inputData numAttributes	    
-	    print sortedInput	
-	    return ()

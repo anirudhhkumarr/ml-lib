@@ -1,4 +1,5 @@
 import Text.ARFF as ARFF
+
 import System.IO  
 import Control.Monad
 
@@ -27,18 +28,37 @@ instance Ord AttributeValue where
 instance Eq AttributeValue where
     (NumericValue a) == (NumericValue b) =  a == b
     (NominalValue a) == (NominalValue b) =  a == b
+
 --Classifer
 data AttributeInfo = NUMERIC (Double,Double)
                     |NOMINAL [(BS.ByteString,Double)]--[(Nominal,count)]
+
 instance Show AttributeInfo where
     show (NUMERIC x) = show x
     show (NOMINAL x) = show x
+
+train::FilePath->IO (Header,[(BS.ByteString,[AttributeInfo])])
+train testFilePath = do
+                        trainHandle <- openFile testFilePath ReadMode
+                        trainContents <- hGetContents trainHandle
+                        let 
+                           trainInput = case (parseARFF $ pack trainContents) of 
+                                          Partial k -> (k BS.empty)
+                                          x-> x
+                           (trainHeader,traindata) = case trainInput of Done _ y ->y
+                           --Drop data objects with one or more than missing feature value
+                           inputData = map catMaybes traindata	
+                           numAttributes = length $ attributes trainHeader
+                           Nominal classes = dataType $ last $ attributes trainHeader
+                           attributesInfo = attributes trainHeader	
+                           sortedInput = sortByClass inputData numAttributes
+                        return (trainHeader,zipWith (\ a b ->(a,b)) classes $ trainData attributesInfo (sort classes) sortedInput)	
 
 trainData::[Attribute]->[BS.ByteString]->[[AttributeValue]]->[[AttributeInfo]]
 trainData attributesInfo (first:rest) input = (classInfo : (trainData attributesInfo rest restClassData))
                                               where
                                                 intialInfo = intialize attributesInfo
-                                                (classInfo,restClassData) = trainClass intialInfo first input 0 				      
+                                                (classInfo,restClassData) = trainClass intialInfo first input 0     			      
 trainData _ _ [] = []
 
 intialize::[Attribute]->[AttributeInfo]
@@ -51,21 +71,43 @@ foo a =case (dataType a) of Nominal xs -> NOMINAL $ intializeNominal xs
 intializeNominal:: [BS.ByteString]->[(BS.ByteString,Double)]
 intializeNominal = map (\ x->(x,0))
 
+trainClass::[AttributeInfo]->BS.ByteString->[[AttributeValue]]->Double->([AttributeInfo],[[AttributeValue]])
+trainClass info first (x:xs) n 
+    |(last x) == (NominalValue first) = trainClass (updateClassInfo info $ init x) first xs (n+1)
+    | otherwise  = (finalizeInfo info n,x:xs)
+trainClass info _ [] n = (finalizeInfo info n,[])
+
+updateClassInfo::[AttributeInfo]->[AttributeValue]->[AttributeInfo]
+updateClassInfo info object =  zipWith bar info object
+
+bar::AttributeInfo->AttributeValue->AttributeInfo
+bar (NUMERIC (x,y)) (NumericValue a) = NUMERIC (x+a,y+a^2)
+bar (NOMINAL xs) (NominalValue a) = NOMINAL $ updateNominal xs a
+
+updateNominal::[(BS.ByteString,Double)]->BS.ByteString->[(BS.ByteString,Double)]
+updateNominal ((x1,x2):xs) bs
+    | x1 == bs = (x1,x2+1):xs
+    | otherwise = (x1,x2):updateNominal xs bs
+updateNominal [] _ = []
+
+finalizeInfo::[AttributeInfo]->Double->[AttributeInfo]
+finalizeInfo ((NOMINAL x):xs) n = (NOMINAL $ mapSnd (/n) x):finalizeInfo xs n
+finalizeInfo ((NUMERIC (x1,x2)):xs) n = (NUMERIC (mu,sigma)):finalizeInfo xs n
+                                        where
+                                            mu = x1/n
+                                            sigma = (x2/n)-mu^2
+finalizeInfo [] _ = []
+
+mapSnd::(b->c)->[(a,b)]->[(a,c)]
+mapSnd f ((x1,x2):xs) = (x1,f x2):mapSnd f xs
+mapSnd _ [] = []
+
+mapFst::(a->c)->[(a,b)]->[(c,b)]
+mapFst f ((x1,x2):xs) = (f x1,x2):mapFst f xs
+mapFst _ [] = []
 
 parseARFF input = parse arff input    
 
 sortByClass xs n = sortBy (compare `on` (!!(n-1))) xs  
 
-main =do
-        handle <- openFile "arff.arff" ReadMode
-        contents <- hGetContents handle
-        let input = case (parseARFF $ pack contents) of Partial k -> (k BS.empty)
-                                                        x-> x
-            (_header,_data) = case input of Done _ y ->y
-            inputData = map catMaybes _data	
-            numAttributes = length $ attributes _header
-            Nominal classes = dataType $ last $ attributes _header
-            attributesInfo = attributes _header	
-            sortedInput = sortByClass inputData numAttributes	    
-	    print sortedInput	
-	    return ()
+
