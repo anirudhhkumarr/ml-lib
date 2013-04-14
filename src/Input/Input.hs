@@ -127,8 +127,15 @@ lookup' a y = case Map.lookup a y of
 parseARFF input = parse arff input    
 
 sortByClass xs n = sortBy (compare `on` (!!(n-1))) xs  
-classify x = do
+
+getdifference::[AttributeValue]->[BS.ByteString]->Int
+getdifference ((NominalValue x):xs) (y:ys) = if x == y then getdifference xs ys else 1+getdifference xs ys
+getdifference [] [] = 0
+
+classify x y = do
                 (header,classifier)<- train x
                 --print classifier
+                (originClasses,learnedClasses) <- test (header,classifier) y
+                print $ getdifference originClasses learnedClasses
                 return ()
 
