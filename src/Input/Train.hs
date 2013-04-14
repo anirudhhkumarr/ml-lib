@@ -67,9 +67,17 @@ train testFilePath =
         trainHandle <- openFile testFilePath ReadMode
         trainContents <- hGetContents trainHandle
         let
-            trainInput = 
+            returnValue = 
                 case resultExpr of 
-                    Done _ k -> Right k
+                    Done _ a -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
+                                where
+                                    (trainHeader,traindata) = a
+                                    --Drop data objects with one or more than missing feature value
+                                    inputData = filter (not . null) $ map removeNothing traindata
+                                    numAttributes = length $ attributes trainHeader
+                                    Nominal classes = dataType $ last $ attributes trainHeader
+                                    attributesInfo = attributes trainHeader                                    
+                                    
                     Fail remInput contexts msg ->
                         Left ("In Train Data :\nRemaining input is :\n" ++ 
                         (unpack remInput) ++ "Invalid row supplied :\n"++ 
@@ -80,20 +88,6 @@ train testFilePath =
                     case (parseARFF $ pack trainContents) of
                         Partial k -> (k BS.empty)
                         k -> k
-
-                
-            returnValue = 
-                case trainInput of
-                    Right a ->  
-                        Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)                               
-                        where
-                            (trainHeader,traindata) = a
-                            --Drop data objects with one or more than missing feature value
-                            inputData = filter (not . null) $ map removeNothing traindata
-                            numAttributes = length $ attributes trainHeader
-                            Nominal classes = dataType $ last $ attributes trainHeader
-                            attributesInfo = attributes trainHeader
-                    Left a -> Left a           
         
         return returnValue
 ----------------------------------------------------------------------------------------------------------------

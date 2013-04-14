@@ -66,7 +66,7 @@ removeNothing xs = if length ys == length xs
                       then ys
                       else []
                    where    
-                       ys = catMaybes x
+                       ys = catMaybes xs
                        
 testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[BS.ByteString]
 testData classifier inputData = map (testObject classifier) inputData 
