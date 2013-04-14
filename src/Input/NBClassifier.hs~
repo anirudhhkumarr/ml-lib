@@ -24,16 +24,14 @@ import Data.List
 import Data.Function
 
 
------------------------------------------------------------------------------------------------------------
 getdifference::[AttributeValue]->[BS.ByteString]->Int
-getdifference ((NominalValue x):xs) (y:ys) = if x == y then 1+getdifference xs ys else getdifference xs ys
+getdifference ((NominalValue x):xs) (y:ys) = if x == y then getdifference xs ys else 1+getdifference xs ys
 getdifference [] [] = 0
 classify x y = do
 		(header,classifier)<- train x
-		print classifier
+		--print classifier
 		(originClasses,learnedClasses) <- test (header,classifier) y
+		print learnedClasses		
 		print $ getdifference originClasses learnedClasses
 		return ()
-
-
 
