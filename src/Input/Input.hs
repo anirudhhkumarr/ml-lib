@@ -112,6 +112,18 @@ test (trainHeader,classifier) testFilePath = do
 testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[BS.ByteString]
 testData classifier inputData = map (testObject classifier) inputData 
 
+testObject ::[(BS.ByteString,[AttributeInfo])] -> [AttributeValue] -> BS.ByteString
+testObject classifier object =fst $ last $ sortBy (compare `on` (snd)) $ map (foo object) classifier
+                                where 
+                                    foo object (classs,values) = (classs,computeProbability object values)
+
+computeProbability ((NominalValue a):xs) ((NOMINAL y):ys) = (lookup' a y) * (computeProbability xs ys)    
+computeProbability ((NumericValue a):xs) ((NUMERIC (mu,sigma)):ys) = 1/sqrt(2*pi*sigma^2)*exp(-(a-mu)^2/(2*sigma^2))*(computeProbability xs ys)	
+computeProbability [] [] = 1.0
+
+lookup' a y = case Map.lookup a y of
+                Just x->x
+
 parseARFF input = parse arff input    
 
 sortByClass xs n = sortBy (compare `on` (!!(n-1))) xs  
