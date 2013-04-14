@@ -63,10 +63,10 @@ trainData _ _ [] = []
 
 intialize::[Attribute]->[AttributeInfo]
 intialize = map foo
-
-foo::Attribute->AttributeInfo
-foo a =case (dataType a) of Nominal xs -> NOMINAL $ intializeNominal xs
-                            Numeric -> NUMERIC (0.0,0.0)
+            where
+                --foo::Attribute->AttributeInfo
+                foo a =case (dataType a) of Nominal xs -> NOMINAL $ intializeNominal xs
+                                            Numeric -> NUMERIC (0.0,0.0)
 
 intializeNominal:: [BS.ByteString]->[(BS.ByteString,Double)]
 intializeNominal = map (\ x->(x,0))
@@ -79,10 +79,10 @@ trainClass info _ [] n = (finalizeInfo info n,[])
 
 updateClassInfo::[AttributeInfo]->[AttributeValue]->[AttributeInfo]
 updateClassInfo info object =  zipWith bar info object
-
-bar::AttributeInfo->AttributeValue->AttributeInfo
-bar (NUMERIC (x,y)) (NumericValue a) = NUMERIC (x+a,y+a^2)
-bar (NOMINAL xs) (NominalValue a) = NOMINAL $ updateNominal xs a
+                                where
+                                    bar::AttributeInfo->AttributeValue->AttributeInfo
+                                    bar (NUMERIC (x,y)) (NumericValue a) = NUMERIC (x+a,y+a^2)
+                                    bar (NOMINAL xs) (NominalValue a) = NOMINAL $ updateNominal xs a
 
 updateNominal::[(BS.ByteString,Double)]->BS.ByteString->[(BS.ByteString,Double)]
 updateNominal ((x1,x2):xs) bs
@@ -109,3 +109,8 @@ mapFst _ [] = []
 parseARFF input = parse arff input    
 
 sortByClass xs n = sortBy (compare `on` (!!(n-1))) xs  
+classify x y = do
+                (header,classifier)<- train x
+                print classifier
+                return ()
+
