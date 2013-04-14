@@ -95,6 +95,23 @@ finalizeInfo ((NUMERIC (x1,x2)):xs) n = (NUMERIC (mu,sigma)):finalizeInfo xs n
                                             sigma = sqrt(if ((x2/n)-mu^2) == 0 then 0.000000000001 else (x2/n)-mu^2)
 finalizeInfo [] _ = []
 
+test::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO ([BS.ByteString])
+test (trainHeader,classifier) testFilePath = do 
+                                                testHandle <- openFile testFilePath ReadMode
+                                                testContents <- hGetContents testHandle
+                                                let 
+                                                    testInput = case (parseARFF $ pack testContents) of 
+                                                                Partial k -> (k BS.empty)
+                                                                x-> x
+                                                    (testHeader,testdata) = case testInput of Done _ y ->y
+                                                    --Drop data objects with one or more than missing feature value
+                                                    inputData = map catMaybes testdata	
+                                                    Nominal classes = dataType $ last $ attributes testHeader
+                                                return $ testData classifier $ map (init) inputData
+
+testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[BS.ByteString]
+testData classifier inputData = map (testObject classifier) inputData 
+
 parseARFF input = parse arff input    
 
 sortByClass xs n = sortBy (compare `on` (!!(n-1))) xs  
