@@ -60,6 +60,19 @@ trainClass info first (x:xs) n
     | otherwise  = (finalizeInfo info n,x:xs)
 trainClass info _ [] n = (finalizeInfo info n,[])
 
+updateClassInfo::[AttributeInfo]->[AttributeValue]->[AttributeInfo]
+updateClassInfo info object =  zipWith bar info object
+
+bar::AttributeInfo->AttributeValue->AttributeInfo
+bar (NUMERIC (x,y)) (NumericValue a) = NUMERIC (x+a,y+a^2)
+bar (NOMINAL xs) (NominalValue a) = NOMINAL $ updateNominal xs a
+
+updateNominal::[(BS.ByteString,Double)]->BS.ByteString->[(BS.ByteString,Double)]
+updateNominal ((x1,x2):xs) bs
+    | x1 == bs = (x1,x2+1):xs
+    | otherwise = (x1,x2):updateNominal xs bs
+updateNominal [] _ = []
+
 
 parseARFF input = parse arff input    
 
@@ -78,4 +91,3 @@ main =do
             sortedInput = sortByClass inputData numAttributes	    
 	    print sortedInput	
 	    return ()
-
