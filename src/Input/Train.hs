@@ -69,7 +69,7 @@ train testFilePath =
         let
             returnValue = 
                 case resultExpr of 
-                    Done _ a -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
+                    Right (Done _ a) -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
                                 where
                                     (trainHeader,traindata) = a
                                     --Drop data objects with one or more than missing feature value
@@ -78,21 +78,40 @@ train testFilePath =
                                     Nominal classes = dataType $ last $ attributes trainHeader
                                     attributesInfo = attributes trainHeader                                    
                                     
-                    Fail remInput contexts msg ->
-                        Left ("In Train Data :\nRemaining input is :\n" ++ 
-                        (unpack remInput) ++ "Invalid row supplied :\n"++ 
-                        foldl (++) "" contexts)
+                    Left strerr -> Left strerr
                     
                 where
-                resultExpr = 
-                    case (parseARFF $ pack trainContents) of
-                        Partial k -> (k BS.empty)
-                        k -> k
+                    (x:xs) = lines trainContents
+                    resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
         
         return returnValue
 ----------------------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------------------
+parseLinebyLine:: Result (Header, [[Maybe AttributeValue]]) -> [String] -> String -> Int -> Either String (Result (Header, [[Maybe AttributeValue]]))
+
+parseLinebyLine initval (x:xs) prevline lineno = 
+    case initval of 
+        Partial k-> parseLinebyLine (k  $ pack (x++"\n")) xs x (lineno+1)
+        Fail remInput contexts msg ->
+            Left ("In Train Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++ getContextString contexts)
+
+        k -> Right k
+                              
+parseLinebyLine initval [] prevline lineno = 
+    case initval of
+        Partial k-> Right $ k BS.empty
+        Fail remInput contexts msg -> 
+            Left ("In Train Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++  getContextString contexts)
+            
+        k-> Right k
+
+        
+getContextString:: [String] -> String
+getContextString (x:x1:xs) = x++"\n"++getContextString (x1:xs)
+getContextString (x:[]) = x
+getContextString [] = ""
+
 --Function for learning various parameters such as {mu(mean),sigma(standard deviation)} and probability for numeric and nominal features for various --classes 
 trainData::[Attribute]->[BS.ByteString]->[[AttributeValue]]->(Map.Map BS.ByteString [AttributeInfo])
 trainData attributesInfo classes input = trainClasses intialClassInfo input
