@@ -43,7 +43,7 @@ test (trainHeader,classifier) testFilePath =
                         where
                             (testHeader,testdata) = k
                             --Drop data objects with one or more than missing feature value
-                            inputData = map catMaybes testdata
+                            inputData = filter (not . null) $ map removeNothing testdata
                             Nominal classes = dataType $ last $ attributes testHeader
                     
                     
@@ -60,6 +60,14 @@ test (trainHeader,classifier) testFilePath =
 
         return returnValue
 
+        
+removeNothing::[Maybe a] ->[a]
+removeNothing xs = if length ys == length xs
+                      then ys
+                      else []
+                   where    
+                       ys = catMaybes x
+                       
 testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[BS.ByteString]
 testData classifier inputData = map (testObject classifier) inputData 
 
