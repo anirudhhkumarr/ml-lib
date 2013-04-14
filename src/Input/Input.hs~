@@ -21,6 +21,9 @@ import Data.Function
 --Data.List
 import Data.List
 
+--Data.Map
+import qualified Data.Map as Map
+
 instance Ord AttributeValue where
     compare (NumericValue a) (NumericValue b) = compare a b
     compare (NominalValue a) (NominalValue b) = compare a b
@@ -31,7 +34,7 @@ instance Eq AttributeValue where
 
 --Classifer
 data AttributeInfo = NUMERIC (Double,Double)
-                    |NOMINAL [(BS.ByteString,Double)]--[(Nominal,count)]
+                    |NOMINAL (Map.Map BS.ByteString Double)
 
 instance Show AttributeInfo where
     show (NUMERIC x) = show x
@@ -63,13 +66,13 @@ trainData _ _ [] = []
 
 intialize::[Attribute]->[AttributeInfo]
 intialize = map foo
+            where
+                --foo::Attribute->AttributeInfo
+                foo a =case (dataType a) of Nominal xs -> NOMINAL $ intializeNominal xs
+                                            Numeric -> NUMERIC (0.0,0.0)
 
-foo::Attribute->AttributeInfo
-foo a =case (dataType a) of Nominal xs -> NOMINAL $ intializeNominal xs
-                            Numeric -> NUMERIC (0.0,0.0)
-
-intializeNominal:: [BS.ByteString]->[(BS.ByteString,Double)]
-intializeNominal = map (\ x->(x,0))
+intializeNominal:: [BS.ByteString]->(Map.Map BS.ByteString Double)
+intializeNominal xs = Map.fromList $ map (\ x->(x,0)) xs
 
 trainClass::[AttributeInfo]->BS.ByteString->[[AttributeValue]]->Double->([AttributeInfo],[[AttributeValue]])
 trainClass info first (x:xs) n 
@@ -79,35 +82,24 @@ trainClass info _ [] n = (finalizeInfo info n,[])
 
 updateClassInfo::[AttributeInfo]->[AttributeValue]->[AttributeInfo]
 updateClassInfo info object =  zipWith bar info object
-
-bar::AttributeInfo->AttributeValue->AttributeInfo
-bar (NUMERIC (x,y)) (NumericValue a) = NUMERIC (x+a,y+a^2)
-bar (NOMINAL xs) (NominalValue a) = NOMINAL $ updateNominal xs a
-
-updateNominal::[(BS.ByteString,Double)]->BS.ByteString->[(BS.ByteString,Double)]
-updateNominal ((x1,x2):xs) bs
-    | x1 == bs = (x1,x2+1):xs
-    | otherwise = (x1,x2):updateNominal xs bs
-updateNominal [] _ = []
+                                where
+                                    --bar::AttributeInfo->AttributeValue->AttributeInfo
+                                    bar (NUMERIC (x,y)) (NumericValue a) = NUMERIC (x+a,y+a^2)
+                                    bar (NOMINAL xs) (NominalValue a) = NOMINAL $ Map.adjust (1+) a xs
 
 finalizeInfo::[AttributeInfo]->Double->[AttributeInfo]
-finalizeInfo ((NOMINAL x):xs) n = (NOMINAL $ mapSnd (/n) x):finalizeInfo xs n
+finalizeInfo ((NOMINAL x):xs) n = (NOMINAL $ Map.map (/n) x):finalizeInfo xs n
 finalizeInfo ((NUMERIC (x1,x2)):xs) n = (NUMERIC (mu,sigma)):finalizeInfo xs n
                                         where
                                             mu = x1/n
-                                            sigma = (x2/n)-mu^2
+                                            sigma = sqrt(if ((x2/n)-mu^2) == 0 then 0.000000000001 else (x2/n)-mu^2)
 finalizeInfo [] _ = []
-
-mapSnd::(b->c)->[(a,b)]->[(a,c)]
-mapSnd f ((x1,x2):xs) = (x1,f x2):mapSnd f xs
-mapSnd _ [] = []
-
-mapFst::(a->c)->[(a,b)]->[(c,b)]
-mapFst f ((x1,x2):xs) = (f x1,x2):mapFst f xs
-mapFst _ [] = []
 
 parseARFF input = parse arff input    
 
 sortByClass xs n = sortBy (compare `on` (!!(n-1))) xs  
-
+classify x = do
+                (header,classifier)<- train x
+                --print classifier
+                return ()
 
