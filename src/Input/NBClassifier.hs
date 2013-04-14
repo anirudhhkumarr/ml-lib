@@ -27,11 +27,25 @@ import Data.Function
 getdifference::[AttributeValue]->[BS.ByteString]->Int
 getdifference ((NominalValue x):xs) (y:ys) = if x == y then getdifference xs ys else 1+getdifference xs ys
 getdifference [] [] = 0
-classify x y = do
-		(header,classifier)<- train x
-		--print classifier
-		(originClasses,learnedClasses) <- test (header,classifier) y
-		print learnedClasses		
-		print $ getdifference originClasses learnedClasses
-		return ()
-
+classify x y = 
+    do
+        trainOutput <- train x
+        let 
+            mtestOutput = 
+                case trainOutput of 
+                    Right a ->  test (header,classifier) y
+                                where
+                                    (header,classifier) = a
+                    Left a -> return (Left a)                                       
+            
+        --print classifier
+        testOutput <- mtestOutput 
+        case testOutput of 
+            Right a -> do
+                        print originClasses
+                        print learnedClasses
+                        print $ getdifference originClasses learnedClasses
+                        where
+                            (originClasses,learnedClasses)=a
+            Left a -> putStrLn a        
+        return ()
