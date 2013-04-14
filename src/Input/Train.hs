@@ -89,7 +89,7 @@ train testFilePath =
                         where
                             (trainHeader,traindata) = a
                             --Drop data objects with one or more than missing feature value
-                            inputData = filter (not . null) $ map catMaybes traindata
+                            inputData = filter (not . null) $ map removeNothing traindata
                             numAttributes = length $ attributes trainHeader
                             Nominal classes = dataType $ last $ attributes trainHeader
                             attributesInfo = attributes trainHeader
@@ -109,6 +109,12 @@ trainData attributesInfo classes input = trainClasses intialClassInfo input
 
 ------------------------------------------------------------------------------------------------------------
 
+removeNothing::[Maybe a] ->[a]
+removeNothing xs = if length ys == length xs
+                      then ys
+                      else []
+                   where    
+                       ys = catMaybes xs
 
 --Intialize feature values for a class
 --1. For numeric feature intialize with (0.0,0.0)
