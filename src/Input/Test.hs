@@ -39,26 +39,44 @@ test (trainHeader,classifier) testFilePath =
         let
             returnValue = 
                 case resultExpr of       
-                    Done _ k -> Right (map last inputData ,testData classifier $ map init inputData)
+                    Right (Done _ k) -> Right (map last inputData ,testData classifier $ map init inputData)
                         where
                             (testHeader,testdata) = k
                             --Drop data objects with one or more than missing feature value
                             inputData = filter (not . null) $ map removeNothing testdata
                             Nominal classes = dataType $ last $ attributes testHeader
                     
-                    
-                    Fail remInput contexts msg ->
-                        Left ("In Test Data :\nRemaining input is :\n" ++ 
-                        (unpack remInput) ++ "Invalid row supplied :\n"++ 
-                        foldl (++) "" contexts)
+                    Left strerr -> Left strerr
     
-                where
-                resultExpr = 
-                    case (parseARFF $ pack testContents) of
-                        Partial k -> (k BS.empty)
-                        k -> k        
+                where 
+                    (x:xs) = lines testContents
+                    resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
 
         return returnValue
+
+        
+parseLinebyLine:: Result (Header, [[Maybe AttributeValue]]) -> [String] -> String -> Int -> Either String (Result (Header, [[Maybe AttributeValue]]))
+
+parseLinebyLine initval (x:xs) prevline lineno = 
+    case initval of 
+        Partial k-> parseLinebyLine (k  $ pack (x++"\n")) xs x (lineno+1)
+        Fail remInput contexts msg ->
+            Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++ getContextString contexts)
+
+        k -> Right k
+                              
+parseLinebyLine initval [] prevline lineno = 
+    case initval of
+        Partial k-> Right $ k BS.empty
+        Fail remInput contexts msg -> 
+            Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++  getContextString contexts)
+            
+        k-> Right k        
+        
+getContextString:: [String] -> String
+getContextString (x:x1:xs) = x++"\n"++getContextString (x1:xs)
+getContextString (x:[]) = x
+getContextString [] = ""
 
         
 removeNothing::[Maybe a] ->[a]

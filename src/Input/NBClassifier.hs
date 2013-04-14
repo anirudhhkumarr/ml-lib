@@ -42,9 +42,12 @@ classify x y =
         testOutput <- mtestOutput 
         case testOutput of 
             Right a -> do
+                        putStrLn "Original Classes "
                         print originClasses
+                        putStrLn "Inferenced Classes "
                         print learnedClasses
-                        print $ getdifference originClasses learnedClasses
+                        putStrLn "No of records  mismatched "
+                        print $ (getdifference originClasses learnedClasses)
                         where
                             (originClasses,learnedClasses)=a
             Left a -> putStrLn a        
