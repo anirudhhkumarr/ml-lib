@@ -31,7 +31,7 @@ import Data.Function
 
 ----------------------------------------------------------------------------------------------------------------
 
-test:: (Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[BS.ByteString])))
+test:: (Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
 test (trainHeader,classifier) testFilePath = 
     do 
         testHandle <- openFile testFilePath ReadMode
@@ -74,10 +74,10 @@ parseLinebyLine initval [] prevline lineno =
         k-> Right k        
         
                        
-testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[BS.ByteString]
+testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[AttributeValue]
 testData classifier inputData = map (testObject classifier) inputData 
 
-testObject classifier object = fst $ last $ sortBy (compare `on` (snd)) $ map (foo object) classifier
+testObject classifier object = NominalValue $ fst $ last $ sortBy (compare `on` (snd)) $ map (foo object) classifier
                                where 
                                 foo object (classs,values) = (classs,computeProbability object values)
 

@@ -5,13 +5,13 @@
 
 @attribute outlook { sunny, overcast, rainy }
 @attribute temperature numeric
-@attribute humidity numeric
+@attribute hmidity numeric
 @attribute windy { TRUE, FALSE }
 @attribute play { yes, no }
 @attribute class {0,1,2,3,4,5}
 
 @data
-overcast, 1, 2 FALSE, yes,0
+overcast, 1, 2 ,FALSE, yes,0
 rainy, 2, 4, FALSE, yes,2
 rainy, 3, 0, FALSE, yes,5
 rainy, 4, 0, TRUE, no,5

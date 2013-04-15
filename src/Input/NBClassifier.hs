@@ -24,8 +24,8 @@ import Data.List
 import Data.Function
 
 
-getdifference::[AttributeValue]->[BS.ByteString]->Int
-getdifference ((NominalValue x):xs) (y:ys) = if x == y then getdifference xs ys else 1+getdifference xs ys
+getdifference::[AttributeValue]->[AttributeValue]->Int
+getdifference (x:xs) (y:ys) = if x == y then getdifference xs ys else 1+getdifference xs ys
 getdifference [] [] = 0
 classify x y = 
     do
