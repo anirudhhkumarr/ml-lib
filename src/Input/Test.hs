@@ -1,7 +1,7 @@
 module Test (test) where 
 
 import Input(parseARFF)
-import Train(AttributeInfo(..)) 
+import Train(AttributeInfo(..),getContextString,removeNothing) 
 import Text.ARFF as ARFF
 import System.IO  
 import Control.Monad
@@ -73,18 +73,6 @@ parseLinebyLine initval [] prevline lineno =
             
         k-> Right k        
         
-getContextString:: [String] -> String
-getContextString (x:x1:xs) = x++"\n"++getContextString (x1:xs)
-getContextString (x:[]) = x
-getContextString [] = ""
-
-        
-removeNothing::[Maybe a] ->[a]
-removeNothing xs = if length ys == length xs
-                      then ys
-                      else []
-                   where    
-                       ys = catMaybes xs
                        
 testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[BS.ByteString]
 testData classifier inputData = map (testObject classifier) inputData 

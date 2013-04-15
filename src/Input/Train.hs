@@ -1,4 +1,4 @@
-module Train (train,AttributeInfo(..)) where
+module Train (train,AttributeInfo(..),removeNothing,getContextString) where
 
 import Input(parseARFF)
 import Text.ARFF as ARFF
@@ -112,6 +112,14 @@ getContextString (x:x1:xs) = x++"\n"++getContextString (x1:xs)
 getContextString (x:[]) = x
 getContextString [] = ""
 
+removeNothing::[Maybe a] ->[a]
+removeNothing xs = if length ys == length xs
+                      then ys
+                      else []
+                   where    
+                       ys = catMaybes xs
+
+
 --Function for learning various parameters such as {mu(mean),sigma(standard deviation)} and probability for numeric and nominal features for various --classes 
 trainData::[Attribute]->[BS.ByteString]->[[AttributeValue]]->(Map.Map BS.ByteString [AttributeInfo])
 trainData attributesInfo classes input = trainClasses intialClassInfo input
@@ -121,13 +129,6 @@ trainData attributesInfo classes input = trainClasses intialClassInfo input
 ------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------------------------------------
-
-removeNothing::[Maybe a] ->[a]
-removeNothing xs = if length ys == length xs
-                      then ys
-                      else []
-                   where    
-                       ys = catMaybes xs
 
 --Intialize feature values for a class
 --1. For numeric feature intialize with (0.0,0.0)
