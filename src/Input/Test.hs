@@ -49,10 +49,12 @@ test testFilePath =
                          x-> x
             (testHeader,testdata) = case testInput of Done _ y ->y
             attributesInfo = init $ attributes testHeader
-            --inputData = filter (not . null) $ map removeNothing testdata
             intial = intializeMissingValues attributesInfo
             computeValues = computeMissingValues intial $ map init testdata
-        print computeValues
+            finalmiss = finalizeMissingValues computeValues (fromIntegral(length testdata))
+        print finalmiss
+        print testdata
+        print $ fillMissingValues finalmiss $map init testdata
         return ()
         {-
             returnValue = 
@@ -78,13 +80,18 @@ test testFilePath =
         return returnValue
        -}
       
-       
+fillMissingValues values input = map (foo values) input  
+                    where 
+                        foo (x:xs) (Nothing:ys) = x:foo xs ys
+                        foo (x:xs) (Just y:ys) = y:foo xs ys
+                        foo [] [] = []
+                                 
 computeMissingValues::[MissingValue]->[[Maybe AttributeValue]]->[MissingValue]
-computeMissingValues intialValues xs = foldl foo (intialValues,0) xs
+computeMissingValues intialValues xs = foldl foo intialValues xs
                                        where
-                                        foo ((NumValue z:zs),n) (Just (NumericValue y):ys) =(NumValue (z+y)):foo zs ys
-                                        foo ((NomValue z:zs),n) (Just (NominalValue y):ys) =(NomValue $ Map.adjust (+1) y z):foo zs ys
-                                        foo ((z:zs),n) (Nothing:ys) =z:foo zs ys
+                                        foo (NumValue z:zs) (Just (NumericValue y):ys) =(NumValue (z+y)):foo zs ys
+                                        foo (NomValue z:zs) (Just (NominalValue y):ys) =(NomValue $ Map.adjust (+1) y z):foo zs ys
+                                        foo (z:zs) (Nothing:ys) =z:foo zs ys
                                         foo [] [] = []                                     
                                                                                                                                                         
 intializeMissingValues::[Attribute]->[MissingValue]
@@ -99,7 +106,7 @@ intializeMissingNominal xs = Map.fromList $ map (\ x->(x,0)) xs
 
 finalizeMissingValues xs n = map foo xs 
                                  where
-                                    foo (NomValue ys) = NominalValue $ fst $ Map.findMax ys
+                                    foo (NomValue ys) = NominalValue $ fst $ last $ sortBy (compare `on` snd) $ Map.toList ys
                                     foo (NumValue y) = NumericValue (y/n)
                                     
 parseLinebyLine:: Result (Header, [[Maybe AttributeValue]]) -> [String] -> String -> Int -> Either String (Result (Header, [[Maybe AttributeValue]]))
