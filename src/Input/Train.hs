@@ -83,7 +83,7 @@ train testFilePath =
                 where
                     (x:xs) = lines trainContents
                     resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
-        
+       -- print returnValue
         return returnValue
 ----------------------------------------------------------------------------------------------------------------
 

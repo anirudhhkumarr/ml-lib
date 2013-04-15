@@ -1,7 +1,7 @@
 module Test (test) where 
 
 import Input(parseARFF)
-import Train(AttributeInfo(..),getContextString,removeNothing) 
+import Train(AttributeInfo(..),getContextString) 
 import Text.ARFF as ARFF
 import System.IO  
 import Control.Monad
@@ -47,7 +47,7 @@ test (trainHeader,classifier) testFilePath =
                                         then 
                                             Right (convertNothing $ map last testdata ,testData classifier completeData)
                                         else
-                                            Left "Headers of train and test file doesn't match"
+                                            Left $ contextHeaderError trainHeader testHeader 
                                         where
                                             (testHeader,testdata) = k
                                             attributesInfo = init $ attributes testHeader
@@ -85,6 +85,26 @@ parseLinebyLine initval [] prevline lineno =
             Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++  getContextString contexts)
             
         k-> Right k        
+
+contextHeaderError::Header->Header->String
+contextHeaderError trainHeader testHeader = if title trainHeader /= title testHeader
+                                            then "Relation name in testfile doen't match with relation name in train file" 
+                                            else if (length $ attributes trainHeader) /= (length $ attributes testHeader)
+                                            then "Number of attribute definitions in testfile doesn't match with trainfile"
+                                            else check (attributes trainHeader) (attributes testHeader)
+                                            where
+                                                check (x:xs) (y:ys)  
+                                                    |x == y = check xs ys
+                                                    |otherwise = case (dataType y) of
+                                                                    Numeric -> str ++ " numeric"
+                                                                    Nominal xs -> str ++ " {" ++ (init $foo xs) ++"}"
+                                                                    where
+                                                                         str ="Definition of attribute "++ unpack (name x) ++
+                                                                              " doesn't match with its definition in train file.\n" ++
+                                                                              "Perhaps you meant these :\n\t\t@attribute "++ unpack (name x) 
+                                                                         foo (x:xs) = unpack x ++ ","++foo xs
+                                                                         foo [] = ""                                                          
+                                                check [] [] = "Header match "
 
 fillMissingValues values input = map (foo values) input  
                     where 
