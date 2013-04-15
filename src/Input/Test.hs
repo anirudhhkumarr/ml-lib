@@ -39,12 +39,16 @@ test (trainHeader,classifier) testFilePath =
         let
             returnValue = 
                 case resultExpr of       
-                    Right (Done _ k) -> Right (map last inputData ,testData classifier $ map init inputData)
-                        where
-                            (testHeader,testdata) = k
-                            --Drop data objects with one or more than missing feature value
-                            inputData = filter (not . null) $ map removeNothing testdata
-                            Nominal classes = dataType $ last $ attributes testHeader
+                    Right (Done _ k) -> if testHeader == trainHeader 
+                                        then 
+                                            Right (map last inputData ,testData classifier $ map init inputData)
+                                        else
+                                            Left "Headers of train and test file doesn't match"
+                                        where
+                                            (testHeader,testdata) = k
+                                            --Drop data objects with one or more than missing feature value
+                                            inputData = filter (not . null) $ map removeNothing testdata
+                                            Nominal classes = dataType $ last $ attributes testHeader
                     
                     Left strerr -> Left strerr
     
