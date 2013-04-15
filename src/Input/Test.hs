@@ -1,4 +1,4 @@
-module Test (test) where 
+module Test (test,getClasses) where 
 
 import Input(parseARFF)
 import Train(AttributeInfo(..),getContextString) 
@@ -35,7 +35,7 @@ instance (Show MissingValue) where
     show (NomValue x) = show x
     show (NumValue x) = show x
 ----------------------------------------------------------------------------------------------------------------
-test:: (Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
+test::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
 test (trainHeader,classifier) testFilePath = 
     do 
         testHandle <- openFile testFilePath ReadMode
@@ -62,6 +62,48 @@ test (trainHeader,classifier) testFilePath =
                     resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
 
         return returnValue
+------------------------------------------------------------------------------------------------
+getClasses::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String ([AttributeValue]))
+getClasses (trainHeader,classifier) testFilePath = 
+    do 
+        testHandle <- openFile testFilePath ReadMode
+        testContents <- hGetContents testHandle
+        let
+            returnValue = 
+                case resultExpr of       
+                    Right (Done _ k) -> if testHeader == trainHeader 
+                                        then 
+                                            let
+                                                attributesInfo = init $ attributes testHeader
+                                                intial = intializeMissingValues attributesInfo
+                                                computeValues = computeMissingValues intial $ map init testdata
+                                                avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
+                                                completeData = fillMissingValues avgValues $ map init testdata                    
+                                            in
+                                                Right (testData classifier completeData)
+
+                                        else if (title testHeader == title trainHeader) && (attributes testHeader == init (attributes trainHeader))
+                                        then
+                                            let
+                                                attributesInfo = attributes testHeader
+                                                intial = intializeMissingValues attributesInfo
+                                                computeValues = computeMissingValues intial testdata
+                                                avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
+                                                completeData = fillMissingValues avgValues testdata                    
+                                            in
+                                                Right (testData classifier completeData)
+                                        else
+                                            Left $ contextHeaderError trainHeader testHeader 
+                                        where 
+                                            (testHeader,testdata) = k
+
+                    Left strerr -> Left strerr
+                where 
+                    (x:xs) = lines testContents
+                    resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
+
+        return returnValue
+
         
 convertNothing::[Maybe AttributeValue]->[AttributeValue]
 convertNothing = map foo 

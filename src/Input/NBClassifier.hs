@@ -1,4 +1,4 @@
-module NBClassifier where
+module NBClassifier(buildNBClassifier,testClassifier,predictClasses) where
 
 import Text.ARFF as ARFF
 import Test
@@ -24,38 +24,43 @@ import Data.List
 import Data.Function
 
 
-getdifference::[AttributeValue]->[AttributeValue]->Int
-getdifference (x:xs) (y:ys) = if NominalValue (pack "?") == x 
-                              then 
-                                getdifference xs ys
-                              else if x == y 
-                              then
-                                 getdifference xs ys 
-                              else 
-                                1+getdifference xs ys
+getAccuracy::[AttributeValue]->[AttributeValue]->Double
+getAccuracy originalClasses inferencedClasses= (v1-v2)*100/v1
+                                                 where
+                                                     v1 = fromIntegral(length originalClasses)
+                                                     v2 = getdifference originalClasses inferencedClasses
+getdifference (x:xs) (y:ys) 
+    | NominalValue (pack "?") == x = getdifference xs ys
+    | x == y = getdifference xs ys 
+    | otherwise = 1+getdifference xs ys
 getdifference [] [] = 0
-classify x y = 
+
+buildNBClassifier::FilePath->IO (Either String (Header,[(BS.ByteString,[AttributeInfo])]))
+buildNBClassifier = train 
+
+testClassifier::(Either String (Header,[(BS.ByteString,[AttributeInfo])]))->FilePath->IO (Either String Double)
+testClassifier trainOutput y =  
     do
-        trainOutput <- train x
-        let 
-            mtestOutput = 
-                case trainOutput of 
-                    Right a ->  test (header,classifier) y
-                                where
-                                    (header,classifier) = a
-                    Left a -> return (Left a)                                       
-            
-        --print classifier
-        testOutput <- mtestOutput 
-        case testOutput of 
-            Right a -> do
-                        putStrLn "Original Classes "
-                        print originClasses
-                        putStrLn "Inferenced Classes "
-                        print learnedClasses
-                        putStrLn "No of records  mismatched "
-                        print $ (getdifference originClasses learnedClasses)
-                        where
-                            (originClasses,learnedClasses)=a
-            Left a -> putStrLn a        
-        return ()
+        mtestOutput <- 
+            case trainOutput of 
+                Right a ->  test (header,classifier) y
+                            where
+                                (header,classifier) = a
+                Left a -> return (Left a)
+        case mtestOutput of 
+            Right (originalClasses,inferencedClasses)->return (Right $ getAccuracy originalClasses inferencedClasses)
+            Left x -> return (Left x)
+
+predictClasses::(Either String (Header,[(BS.ByteString,[AttributeInfo])]))->FilePath->IO (Either String ([AttributeValue]))
+predictClasses trainOutput y =  
+    do
+        mtestOutput <- 
+            case trainOutput of 
+                Right a ->  getClasses (header,classifier) y
+                            where
+                                (header,classifier) = a
+                Left a -> return (Left a)
+        case mtestOutput of 
+            Right classes->return (Right classes)
+            Left x -> return (Left x)
+
