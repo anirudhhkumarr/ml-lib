@@ -8,7 +8,7 @@
 @attribute humidity numeric
 @attribute windy { TRUE, FALSE }
 @attribute play { yes, no }
-@attribute class {0,1,2,3,4,5}
+@attribute class numeric
 
 @data
 overcast, 1, 2,FALSE, yes,0
