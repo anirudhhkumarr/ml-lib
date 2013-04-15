@@ -28,15 +28,33 @@ import Data.List
 import Data.Function
 
 
+data MissingValue = NumValue Double
+                   |NomValue (Map.Map BS.ByteString Double)
 
+instance (Show MissingValue) where
+    show (NomValue x) = show x
+    show (NumValue x) = show x
 ----------------------------------------------------------------------------------------------------------------
 
-test:: (Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
-test (trainHeader,classifier) testFilePath = 
+--test:: (Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
+--test (trainHeader,classifier) testFilePath = 
+test:: FilePath->IO ()
+test testFilePath = 
     do 
         testHandle <- openFile testFilePath ReadMode
         testContents <- hGetContents testHandle
         let
+            testInput = case (parseARFF $ pack testContents) of 
+                         Partial k -> (k BS.empty)
+                         x-> x
+            (testHeader,testdata) = case testInput of Done _ y ->y
+            attributesInfo = init $ attributes testHeader
+            --inputData = filter (not . null) $ map removeNothing testdata
+            intial = intializeMissingValues attributesInfo
+            computeValues = computeMissingValues intial $ map init testdata
+        print computeValues
+        return ()
+        {-
             returnValue = 
                 case resultExpr of       
                     Right (Done _ k) -> if testHeader == trainHeader 
@@ -49,6 +67,7 @@ test (trainHeader,classifier) testFilePath =
                                             --Drop data objects with one or more than missing feature value
                                             inputData = filter (not . null) $ map removeNothing testdata
                                             Nominal classes = dataType $ last $ attributes testHeader
+                                            attributesInfo = init $ attributes testHeader
                     
                     Left strerr -> Left strerr
     
@@ -57,10 +76,33 @@ test (trainHeader,classifier) testFilePath =
                     resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
 
         return returnValue
+       -}
+      
+       
+computeMissingValues::[MissingValue]->[[Maybe AttributeValue]]->[MissingValue]
+computeMissingValues intialValues xs = foldl foo (intialValues,0) xs
+                                       where
+                                        foo ((NumValue z:zs),n) (Just (NumericValue y):ys) =(NumValue (z+y)):foo zs ys
+                                        foo ((NomValue z:zs),n) (Just (NominalValue y):ys) =(NomValue $ Map.adjust (+1) y z):foo zs ys
+                                        foo ((z:zs),n) (Nothing:ys) =z:foo zs ys
+                                        foo [] [] = []                                     
+                                                                                                                                                        
+intializeMissingValues::[Attribute]->[MissingValue]
+intializeMissingValues = map foo
+            where
+                foo a = case (dataType a) of 
+                        Nominal xs -> NomValue $ intializeMissingNominal xs
+                        Numeric -> NumValue 0.0        
 
-        
+intializeMissingNominal:: [BS.ByteString]-> (Map.Map BS.ByteString Double)
+intializeMissingNominal xs = Map.fromList $ map (\ x->(x,0)) xs
+
+finalizeMissingValues xs n = map foo xs 
+                                 where
+                                    foo (NomValue ys) = NominalValue $ fst $ Map.findMax ys
+                                    foo (NumValue y) = NumericValue (y/n)
+                                    
 parseLinebyLine:: Result (Header, [[Maybe AttributeValue]]) -> [String] -> String -> Int -> Either String (Result (Header, [[Maybe AttributeValue]]))
-
 parseLinebyLine initval (x:xs) prevline lineno = 
     case initval of 
         Partial k-> parseLinebyLine (k  $ pack (x++"\n")) xs x (lineno+1)
