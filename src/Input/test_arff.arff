@@ -11,13 +11,13 @@
 @attribute class {0,1,2,3,4,5}
 
 @data
-?, 1, 2 ,FALSE, yes,0
-rainy, 2, 4, ? , yes,2
+overcast, 1, 2 ,FALSE, yes,0
+rainy, 2, 4, ?, yes,2
 rainy, 3, 0, FALSE, yes,5
 rainy, 4, 0, TRUE, no,5
-overcast, 5, 5, TRUE, yes,0
-sunny, 6, 9, FALSE, no,3
-?, 7, 7, FALSE, yes,0
+overcast, 5, ?, TRUE, yes,0
+sunny, 6, 9, FALSE, no,?
+sunny, 7, 7, FALSE, yes,0
 rainy, 8, 8, FALSE, yes,4
 sunny, 9, 7, TRUE, yes,1
 overcast, 10, 11, TRUE, yes,4

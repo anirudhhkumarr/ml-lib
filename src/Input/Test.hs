@@ -35,51 +35,57 @@ instance (Show MissingValue) where
     show (NomValue x) = show x
     show (NumValue x) = show x
 ----------------------------------------------------------------------------------------------------------------
-
---test:: (Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
---test (trainHeader,classifier) testFilePath = 
-test:: FilePath->IO ()
-test testFilePath = 
+test:: (Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
+test (trainHeader,classifier) testFilePath = 
     do 
         testHandle <- openFile testFilePath ReadMode
         testContents <- hGetContents testHandle
         let
-            testInput = case (parseARFF $ pack testContents) of 
-                         Partial k -> (k BS.empty)
-                         x-> x
-            (testHeader,testdata) = case testInput of Done _ y ->y
-            attributesInfo = init $ attributes testHeader
-            intial = intializeMissingValues attributesInfo
-            computeValues = computeMissingValues intial $ map init testdata
-            finalmiss = finalizeMissingValues computeValues (fromIntegral(length testdata))
-        print finalmiss
-        print testdata
-        print $ fillMissingValues finalmiss $map init testdata
-        return ()
-        {-
             returnValue = 
                 case resultExpr of       
                     Right (Done _ k) -> if testHeader == trainHeader 
                                         then 
-                                            Right (map last inputData ,testData classifier $ map init inputData)
+                                            Right (convertNothing $ map last testdata ,testData classifier completeData)
                                         else
                                             Left "Headers of train and test file doesn't match"
                                         where
                                             (testHeader,testdata) = k
-                                            --Drop data objects with one or more than missing feature value
-                                            inputData = filter (not . null) $ map removeNothing testdata
-                                            Nominal classes = dataType $ last $ attributes testHeader
                                             attributesInfo = init $ attributes testHeader
-                    
+                                            intial = intializeMissingValues attributesInfo
+                                            computeValues = computeMissingValues intial $ map init testdata
+                                            avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
+                                            completeData = fillMissingValues avgValues $ map init testdata                    
                     Left strerr -> Left strerr
-    
+
                 where 
                     (x:xs) = lines testContents
                     resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
 
         return returnValue
-       -}
-      
+        
+convertNothing::[Maybe AttributeValue]->[AttributeValue]
+convertNothing = map foo 
+                    where
+                        foo (Just x) = x
+                        foo (Nothing) = NominalValue $ pack "?"
+                        
+parseLinebyLine:: Result (Header, [[Maybe AttributeValue]]) -> [String] -> String -> Int -> Either String (Result (Header, [[Maybe AttributeValue]]))
+parseLinebyLine initval (x:xs) prevline lineno = 
+    case initval of 
+        Partial k-> parseLinebyLine (k  $ pack (x++"\n")) xs x (lineno+1)
+        Fail remInput contexts msg ->
+            Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++ getContextString contexts)
+
+        k -> Right k
+                              
+parseLinebyLine initval [] prevline lineno = 
+    case initval of
+        Partial k-> Right $ k BS.empty
+        Fail remInput contexts msg -> 
+            Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++  getContextString contexts)
+            
+        k-> Right k        
+
 fillMissingValues values input = map (foo values) input  
                     where 
                         foo (x:xs) (Nothing:ys) = x:foo xs ys
@@ -108,25 +114,7 @@ finalizeMissingValues xs n = map foo xs
                                  where
                                     foo (NomValue ys) = NominalValue $ fst $ last $ sortBy (compare `on` snd) $ Map.toList ys
                                     foo (NumValue y) = NumericValue (y/n)
-                                    
-parseLinebyLine:: Result (Header, [[Maybe AttributeValue]]) -> [String] -> String -> Int -> Either String (Result (Header, [[Maybe AttributeValue]]))
-parseLinebyLine initval (x:xs) prevline lineno = 
-    case initval of 
-        Partial k-> parseLinebyLine (k  $ pack (x++"\n")) xs x (lineno+1)
-        Fail remInput contexts msg ->
-            Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++ getContextString contexts)
-
-        k -> Right k
-                              
-parseLinebyLine initval [] prevline lineno = 
-    case initval of
-        Partial k-> Right $ k BS.empty
-        Fail remInput contexts msg -> 
-            Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++  getContextString contexts)
-            
-        k-> Right k        
-        
-                       
+                                                                   
 testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[AttributeValue]
 testData classifier inputData = map (testObject classifier) inputData 
 

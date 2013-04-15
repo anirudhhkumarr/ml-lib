@@ -25,7 +25,14 @@ import Data.Function
 
 
 getdifference::[AttributeValue]->[AttributeValue]->Int
-getdifference (x:xs) (y:ys) = if x == y then getdifference xs ys else 1+getdifference xs ys
+getdifference (x:xs) (y:ys) = if NominalValue (pack "?") == x 
+                              then 
+                                getdifference xs ys
+                              else if x == y 
+                              then
+                                 getdifference xs ys 
+                              else 
+                                1+getdifference xs ys
 getdifference [] [] = 0
 classify x y = 
     do
