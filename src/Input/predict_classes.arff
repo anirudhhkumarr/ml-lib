@@ -1,0 +1,23 @@
+% The weather data
+% This example was copied from Witten and Frank's data mining book
+
+@relation weather
+
+@attribute outlook { sunny, overcast, rainy }
+@attribute temperature numeric
+@attribute humidity numeric
+@attribute widy { TRUE,FALSE }
+
+
+@data
+overcast, 1, 2 ,FALSE
+rainy, 2, 4, FALSE
+rainy, 3, 0, FALSE
+rainy, 4, 0, TRUE
+overcast, 5, 3, TRUE
+sunny, 6, 9, FALSE
+sunny, 7, 7, FALSE
+rainy, 8, 8, FALSE
+sunny, 9, 7, TRUE
+overcast, 10, 11, TRUE
+overcast, 11, 1, FALSE

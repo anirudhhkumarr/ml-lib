@@ -34,6 +34,7 @@ data MissingValue = NumValue Double
 instance (Show MissingValue) where
     show (NomValue x) = show x
     show (NumValue x) = show x
+
 ----------------------------------------------------------------------------------------------------------------
 test::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
 test (trainHeader,classifier) testFilePath = 
@@ -62,6 +63,7 @@ test (trainHeader,classifier) testFilePath =
                     resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
 
         return returnValue
+
 ------------------------------------------------------------------------------------------------
 getClasses::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String ([AttributeValue]))
 getClasses (trainHeader,classifier) testFilePath = 
@@ -104,6 +106,7 @@ getClasses (trainHeader,classifier) testFilePath =
 
         return returnValue
 
+------------------------------------------------------------------------------------------------------------
         
 convertNothing::[Maybe AttributeValue]->[AttributeValue]
 convertNothing = map foo 
@@ -147,6 +150,7 @@ contextHeaderError trainHeader testHeader = if title trainHeader /= title testHe
                                                                          foo (x:xs) = unpack x ++ ","++foo xs
                                                                          foo [] = ""                                                          
                                                 check [] [] = "Header match "
+------------------------------------------------------------------------------------------------------------
 
 fillMissingValues values input = map (foo values) input  
                     where 
@@ -176,7 +180,8 @@ finalizeMissingValues xs n = map foo xs
                                  where
                                     foo (NomValue ys) = NominalValue $ fst $ last $ sortBy (compare `on` snd) $ Map.toList ys
                                     foo (NumValue y) = NumericValue (y/n)
-                                                                   
+
+------------------------------------------------------------------------------------------------------------                                                                   
 testData::[(BS.ByteString,[AttributeInfo])]->[[AttributeValue]]->[AttributeValue]
 testData classifier inputData = map (testObject classifier) inputData 
 

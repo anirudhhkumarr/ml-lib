@@ -23,21 +23,11 @@ import Data.List
 --Data.Function
 import Data.Function
 
-
-getAccuracy::[AttributeValue]->[AttributeValue]->Double
-getAccuracy originalClasses inferencedClasses= (v1-v2)*100/v1
-                                                 where
-                                                     v1 = fromIntegral(length originalClasses)
-                                                     v2 = getdifference originalClasses inferencedClasses
-getdifference (x:xs) (y:ys) 
-    | NominalValue (pack "?") == x = getdifference xs ys
-    | x == y = getdifference xs ys 
-    | otherwise = 1+getdifference xs ys
-getdifference [] [] = 0
-
+------------------------------------------------------------------------------------------------------------
 buildNBClassifier::FilePath->IO (Either String (Header,[(BS.ByteString,[AttributeInfo])]))
 buildNBClassifier = train 
 
+------------------------------------------------------------------------------------------------------------
 testClassifier::(Either String (Header,[(BS.ByteString,[AttributeInfo])]))->FilePath->IO (Either String Double)
 testClassifier trainOutput y =  
     do
@@ -51,6 +41,19 @@ testClassifier trainOutput y =
             Right (originalClasses,inferencedClasses)->return (Right $ getAccuracy originalClasses inferencedClasses)
             Left x -> return (Left x)
 
+getAccuracy::[AttributeValue]->[AttributeValue]->Double
+getAccuracy originalClasses inferencedClasses= (v1-v2)*100/v1
+                                                 where
+                                                     v1 = fromIntegral(length originalClasses)
+                                                     v2 = getdifference originalClasses inferencedClasses
+
+getdifference (x:xs) (y:ys) 
+    | NominalValue (pack "?") == x = getdifference xs ys
+    | x == y = getdifference xs ys 
+    | otherwise = 1+getdifference xs ys
+getdifference [] [] = 0
+------------------------------------------------------------------------------------------------------------
+
 predictClasses::(Either String (Header,[(BS.ByteString,[AttributeInfo])]))->FilePath->IO (Either String ([AttributeValue]))
 predictClasses trainOutput y =  
     do
@@ -63,4 +66,5 @@ predictClasses trainOutput y =
         case mtestOutput of 
             Right classes->return (Right classes)
             Left x -> return (Left x)
+------------------------------------------------------------------------------------------------------------
 
