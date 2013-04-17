@@ -2,6 +2,7 @@ module Train (train,AttributeInfo(..),removeNothing,getContextString, AttributeV
 
 import Input(parseARFF)
 import Text.ARFF as ARFF
+import CSV(parseCSV)
 import System.IO  
 import Control.Monad
 
@@ -89,14 +90,11 @@ train testFilePath =
                                     
                             Left strerr -> Left strerr
                     
-                        
                 else if filetype=="csv" then
-                    let
-                        (x:xs) = lines trainContents
-                        resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
-                    in                
+                    do 
+                        resultExpr <- parseCSV trainContents testFilePath
                         case resultExpr of 
-                            Right (Done _ a) -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
+                            Right a -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
                                 where
                                     (trainHeader,traindata) = a
                                     --Drop data objects with one or more than missing feature value
