@@ -1,0 +1,14 @@
+Error handling:
+
+    for arff files : 
+        If any discrepancy in file format or missing data, it is caught in a error message with detailed info on how to fix the error.
+        Missing attributes are handled  -> For train files the row containing missing attributes is ignored
+                                        -> For test files, missing attributes are given a mean or median value.
+        During test phase or during class inferencing the header of test and train files are matched and error messages are displyed with suggestions to correct the mismatch.                                        
+                                        
+    for csv files :
+        The structure of the data is automatically inferred after reading the file and a pseudo header equivalent to that in an arff file is   created.
+        The structure of the file is verified. The no of rows on each row should be equal
+        Missing attributes are handled similar to arff files.
+        Header matching is done similar to arff files.
+
