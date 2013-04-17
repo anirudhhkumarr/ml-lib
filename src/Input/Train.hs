@@ -1,9 +1,12 @@
-module Train (train,AttributeInfo(..),removeNothing,getContextString) where
+module Train (train,AttributeInfo(..),removeNothing,getContextString, AttributeValue(..)) where
 
 import Input(parseARFF)
 import Text.ARFF as ARFF
 import System.IO  
 import Control.Monad
+
+--split string
+import Data.List.Split(splitOn)
 
 --Data.ByteString
 import Data.ByteString.Char8(pack,unpack)
@@ -67,9 +70,15 @@ train testFilePath =
         trainHandle <- openFile testFilePath ReadMode
         trainContents <- hGetContents trainHandle
         let
+            filetype = last $ splitOn "." testFilePath
             returnValue = 
-                case resultExpr of 
-                    Right (Done _ a) -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
+                if filetype=="arff" then
+                    let
+                        (x:xs) = lines trainContents
+                        resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
+                    in        
+                        case resultExpr of 
+                            Right (Done _ a) -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
                                 where
                                     (trainHeader,traindata) = a
                                     --Drop data objects with one or more than missing feature value
@@ -78,11 +87,27 @@ train testFilePath =
                                     Nominal classes = dataType $ last $ attributes trainHeader
                                     attributesInfo = attributes trainHeader                                    
                                     
-                    Left strerr -> Left strerr
+                            Left strerr -> Left strerr
                     
-                where
-                    (x:xs) = lines trainContents
-                    resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
+                        
+                else if filetype=="csv" then
+                    let
+                        (x:xs) = lines trainContents
+                        resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
+                    in                
+                        case resultExpr of 
+                            Right (Done _ a) -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
+                                where
+                                    (trainHeader,traindata) = a
+                                    --Drop data objects with one or more than missing feature value
+                                    inputData = filter (not . null) $ map removeNothing traindata
+                                    numAttributes = length $ attributes trainHeader
+                                    Nominal classes = dataType $ last $ attributes trainHeader
+                                    attributesInfo = attributes trainHeader                                    
+                                    
+                            Left strerr -> Left strerr
+                else
+                    Left ("The specified file format "++filetype++ "is not supported\n")
        -- print returnValue
         return returnValue
 ----------------------------------------------------------------------------------------------------------------
