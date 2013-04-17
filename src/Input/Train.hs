@@ -70,44 +70,42 @@ train testFilePath =
     do
         trainHandle <- openFile testFilePath ReadMode
         trainContents <- hGetContents trainHandle
-        let
-            filetype = last $ splitOn "." testFilePath
-            returnValue = 
-                if filetype=="arff" then
-                    let
-                        (x:xs) = lines trainContents
-                        resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
-                    in        
-                        case resultExpr of 
-                            Right (Done _ a) -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
-                                where
-                                    (trainHeader,traindata) = a
-                                    --Drop data objects with one or more than missing feature value
-                                    inputData = filter (not . null) $ map removeNothing traindata
-                                    numAttributes = length $ attributes trainHeader
-                                    Nominal classes = dataType $ last $ attributes trainHeader
-                                    attributesInfo = attributes trainHeader                                    
-                                    
-                            Left strerr -> Left strerr
-                    
-                else if filetype=="csv" then
-                    do 
-                        resultExpr <- parseCSV trainContents testFilePath
-                        case resultExpr of 
-                            Right a -> Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData)
-                                where
-                                    (trainHeader,traindata) = a
-                                    --Drop data objects with one or more than missing feature value
-                                    inputData = filter (not . null) $ map removeNothing traindata
-                                    numAttributes = length $ attributes trainHeader
-                                    Nominal classes = dataType $ last $ attributes trainHeader
-                                    attributesInfo = attributes trainHeader                                    
-                                    
-                            Left strerr -> Left strerr
-                else
-                    Left ("The specified file format "++filetype++ "is not supported\n")
+
+        if (last $ splitOn "." testFilePath) == "arff" then 
+                let
+                    (x:xs) = lines trainContents
+                    resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
+                in        
+                    case resultExpr of 
+                        Right (Done _ a) -> return (Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData))
+                            where
+                                (trainHeader,traindata) = a
+                                --Drop data objects with one or more than missing feature value
+                                inputData = filter (not . null) $ map removeNothing traindata
+                                numAttributes = length $ attributes trainHeader
+                                Nominal classes = dataType $ last $ attributes trainHeader
+                                attributesInfo = attributes trainHeader                                    
+                                
+                        Left strerr -> return (Left strerr)
+                
+        else if (last $ splitOn "." testFilePath) == "csv" then
+            do
+                resultExpr <- parseCSV trainContents testFilePath
+                case resultExpr of 
+                    Right a -> return (Right (trainHeader,Map.toList $ trainData attributesInfo classes inputData))
+                        where
+                            (trainHeader,traindata) = a
+                            --Drop data objects with one or more than missing feature value
+                            inputData = filter (not . null) $ map removeNothing traindata
+                            numAttributes = length $ attributes trainHeader
+                            Nominal classes = dataType $ last $ attributes trainHeader
+                            attributesInfo = attributes trainHeader                                    
+                        
+                    Left strerr -> return (Left strerr)
+        else
+            return (Left ("The specified file format "++(last $ splitOn "." testFilePath) ++ "is not supported\n"))
        -- print returnValue
-        return returnValue
+        
 ----------------------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------------------

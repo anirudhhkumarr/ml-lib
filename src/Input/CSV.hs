@@ -1,7 +1,7 @@
 
 module CSV(parseCSV) where
 
-
+import qualified Data.Text as Dtext
 import Text.ParserCombinators.Parsec
 
 import qualified Control.Exception as Exception
@@ -32,7 +32,7 @@ parseCSV input filename =
                                               
                         Left a -> return (Left a)
                    where  
-                        output= checkIntegrity (removeEmptyLines a) filename
+                        output= checkIntegrity (removeTrailingSpaces $ removeEmptyLines a) filename
                                        
         Left  a -> return (Left (show a))
 
@@ -161,3 +161,7 @@ malformedInput (x:xs) len = if (length x) == len then
                                 []
 
 malformedInput [] len = []                                      
+
+removeTrailingSpaces:: [[String]] ->[[String]]
+removeTrailingSpaces (x:xs) = (map (\x-> Dtext.unpack $ Dtext.strip $ Dtext.pack x) x ): (removeTrailingSpaces xs)
+removeTrailingSpaces [] =[]

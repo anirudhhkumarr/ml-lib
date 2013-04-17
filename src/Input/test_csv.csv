@@ -1,0 +1,12 @@
+overcast, 1, 2 ,FALSE, yes
+rainy, 2, 4, FALSE, yes
+rainy, 3, 0, FALSE, yes
+rainy, 4, 0, TRUE, no
+overcast, 5, 3, TRUE, yes
+sunny, 6, 9, FALSE, no
+sunny, 7, 7, FALSE, yes
+rainy, 8, 8, FALSE, yes
+sunny, 9, 7, TRUE, yes
+overcast, 10, 11, TRUE, yes
+overcast, 11, 1, FALSE, yes
+

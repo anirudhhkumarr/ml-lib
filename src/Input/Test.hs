@@ -6,6 +6,11 @@ import Text.ARFF as ARFF
 import System.IO  
 import Control.Monad
 
+--split string
+import Data.List.Split(splitOn)
+
+import CSV(parseCSV)
+
 --Data.ByteString
 import Data.ByteString.Char8(pack,unpack)
 import qualified Data.ByteString as BS
@@ -41,14 +46,17 @@ test (trainHeader,classifier) testFilePath =
     do 
         testHandle <- openFile testFilePath ReadMode
         testContents <- hGetContents testHandle
-        let
-            returnValue = 
+        if (last $ splitOn "." testFilePath) == "arff" then
+            let
+                (x:xs) = lines testContents
+                resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
+            in
                 case resultExpr of       
                     Right (Done _ k) -> if testHeader == trainHeader 
                                         then 
-                                            Right (convertNothing $ map last testdata ,testData classifier completeData)
+                                            return (Right (convertNothing $ map last testdata ,testData classifier completeData))
                                         else
-                                            Left $ contextHeaderError trainHeader testHeader 
+                                            return (Left $ contextHeaderError trainHeader testHeader )
                                         where
                                             (testHeader,testdata) = k
                                             attributesInfo = init $ attributes testHeader
@@ -56,13 +64,28 @@ test (trainHeader,classifier) testFilePath =
                                             computeValues = computeMissingValues intial $ map init testdata
                                             avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
                                             completeData = fillMissingValues avgValues $ map init testdata                    
-                    Left strerr -> Left strerr
+                    Left strerr -> return (Left strerr)
 
-                where 
-                    (x:xs) = lines testContents
-                    resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
-
-        return returnValue
+        else if (last $ splitOn "." testFilePath) == "csv" then
+            do
+                resultExpr <- parseCSV testContents testFilePath
+                case resultExpr of       
+                    Right k -> if testHeader == trainHeader 
+                               then 
+                                    return (Right (convertNothing $ map last testdata ,testData classifier completeData))
+                                else
+                                    return (Left $ contextHeaderError trainHeader testHeader )
+                                where
+                                    (testHeader,testdata) = k
+                                    attributesInfo = init $ attributes testHeader
+                                    intial = intializeMissingValues attributesInfo
+                                    computeValues = computeMissingValues intial $ map init testdata
+                                    avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
+                                    completeData = fillMissingValues avgValues $ map init testdata                    
+                    Left strerr -> return (Left strerr)
+                    
+        else
+            return (Left ("The specified file format "++(last $ splitOn "." testFilePath) ++ "is not supported\n"))
 
 ------------------------------------------------------------------------------------------------
 getClasses::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String ([AttributeValue]))
@@ -70,41 +93,77 @@ getClasses (trainHeader,classifier) testFilePath =
     do 
         testHandle <- openFile testFilePath ReadMode
         testContents <- hGetContents testHandle
-        let
-            returnValue = 
+        if (last $ splitOn "." testFilePath) == "arff" then
+            let
+                (x:xs) = lines testContents
+                resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1            
+            in
                 case resultExpr of       
-                    Right (Done _ k) -> if testHeader == trainHeader 
-                                        then 
-                                            let
-                                                attributesInfo = init $ attributes testHeader
-                                                intial = intializeMissingValues attributesInfo
-                                                computeValues = computeMissingValues intial $ map init testdata
-                                                avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
-                                                completeData = fillMissingValues avgValues $ map init testdata                    
-                                            in
-                                                Right (testData classifier completeData)
+                    Right (Done _ k) ->
+                        if testHeader == trainHeader 
+                        then 
+                            let
+                                attributesInfo = init $ attributes testHeader
+                                intial = intializeMissingValues attributesInfo
+                                computeValues = computeMissingValues intial $ map init testdata
+                                avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
+                                completeData = fillMissingValues avgValues $ map init testdata                    
+                            in
+                                return (Right (testData classifier completeData))
 
-                                        else if (title testHeader == title trainHeader) && (attributes testHeader == init (attributes trainHeader))
-                                        then
-                                            let
-                                                attributesInfo = attributes testHeader
-                                                intial = intializeMissingValues attributesInfo
-                                                computeValues = computeMissingValues intial testdata
-                                                avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
-                                                completeData = fillMissingValues avgValues testdata                    
-                                            in
-                                                Right (testData classifier completeData)
-                                        else
-                                            Left $ contextHeaderError trainHeader testHeader 
-                                        where 
-                                            (testHeader,testdata) = k
+                        else if (title testHeader == title trainHeader) && (attributes testHeader == init (attributes trainHeader))
+                        then
+                            let
+                                attributesInfo = attributes testHeader
+                                intial = intializeMissingValues attributesInfo
+                                computeValues = computeMissingValues intial testdata
+                                avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
+                                completeData = fillMissingValues avgValues testdata                    
+                            in
+                                return (Right (testData classifier completeData))
+                        else
+                            return (Left $ contextHeaderError trainHeader testHeader )
+                        where 
+                            (testHeader,testdata) = k
 
-                    Left strerr -> Left strerr
-                where 
-                    (x:xs) = lines testContents
-                    resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
+                    Left strerr -> return (Left strerr)
 
-        return returnValue
+        else if (last $ splitOn "." testFilePath) == "csv" then
+            do
+                resultExpr <- parseCSV testContents testFilePath
+                case resultExpr of       
+                    Right k ->
+                        if testHeader == trainHeader 
+                        then 
+                            let
+                                attributesInfo = init $ attributes testHeader
+                                intial = intializeMissingValues attributesInfo
+                                computeValues = computeMissingValues intial $ map init testdata
+                                avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
+                                completeData = fillMissingValues avgValues $ map init testdata                    
+                            in
+                                return (Right (testData classifier completeData))
+
+                        else if (title testHeader == title trainHeader) && (attributes testHeader == init (attributes trainHeader))
+                        then
+                            let
+                                attributesInfo = attributes testHeader
+                                intial = intializeMissingValues attributesInfo
+                                computeValues = computeMissingValues intial testdata
+                                avgValues = finalizeMissingValues computeValues (fromIntegral(length testdata))
+                                completeData = fillMissingValues avgValues testdata                    
+                            in
+                                return (Right (testData classifier completeData))
+                        else
+                            return (Left $ contextHeaderError trainHeader testHeader )
+                        where 
+                            (testHeader,testdata) = k
+
+                    Left strerr -> return (Left strerr)        
+                    
+        else
+            return (Left ("The specified file format "++(last $ splitOn "." testFilePath) ++ "is not supported\n"))                    
+
 
 ------------------------------------------------------------------------------------------------------------
         
