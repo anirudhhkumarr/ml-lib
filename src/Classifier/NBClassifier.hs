@@ -24,10 +24,13 @@ import Data.List
 import Data.Function
 
 ------------------------------------------------------------------------------------------------------------
+-- | This function takes a train file as input and learns classification rules from objcets present in this file 
 buildNBClassifier::FilePath->IO (Either String (Header,[(BS.ByteString,[AttributeInfo])]))
 buildNBClassifier = train 
 
 ------------------------------------------------------------------------------------------------------------
+-- | This function takes a classifier and test file as input.
+-- It then predicts class for objects present in test file and then compares them with original classses and then calculates accuracy and returns it.
 testClassifier::(Either String (Header,[(BS.ByteString,[AttributeInfo])]))->FilePath->IO (Either String Double)
 testClassifier trainOutput y =  
     do
@@ -53,7 +56,7 @@ getdifference (x:xs) (y:ys)
     | otherwise = 1+getdifference xs ys
 getdifference [] [] = 0
 ------------------------------------------------------------------------------------------------------------
-
+-- | This function takes a classifier as input and a test file as input and then predicts a class for each object present in test file and returns class for each obejct 
 predictClasses::(Either String (Header,[(BS.ByteString,[AttributeInfo])]))->FilePath->IO (Either String ([AttributeValue]))
 predictClasses trainOutput y =  
     do
