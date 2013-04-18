@@ -1,8 +1,9 @@
-module Train (train,AttributeInfo(..),removeNothing,getContextString, AttributeValue(..)) where
+{-# LANGUAGE DoAndIfThenElse #-}
+module Classifier.Train (train,AttributeInfo(..),removeNothing,getContextString, AttributeValue(..)) where
 
-import Input(parseARFF)
+import Parser.ARFF(parseARFF)
 import Text.ARFF as ARFF
-import CSV(parseCSV)
+import Parser.CSV(parseCSV)
 import System.IO  
 import Control.Monad
 

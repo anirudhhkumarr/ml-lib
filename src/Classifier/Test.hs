@@ -1,7 +1,9 @@
-module Test (test,getClasses) where 
+{-# LANGUAGE DoAndIfThenElse #-}
+module Classifier.Test (test,getClasses) where 
 
-import Input(parseARFF)
-import Train(AttributeInfo(..),getContextString) 
+import Parser.ARFF(parseARFF)
+import Parser.CSV(parseCSV)
+import Classifier.Train(AttributeInfo(..),getContextString) 
 import Text.ARFF as ARFF
 import System.IO  
 import Control.Monad
@@ -9,7 +11,7 @@ import Control.Monad
 --split string
 import Data.List.Split(splitOn)
 
-import CSV(parseCSV)
+
 
 --Data.ByteString
 import Data.ByteString.Char8(pack,unpack)

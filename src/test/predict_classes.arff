@@ -6,8 +6,7 @@
 @attribute outlook { sunny, overcast, rainy }
 @attribute temperature numeric
 @attribute humidity numeric
-@attribute widy { TRUE,FALSE }
-
+@attribute windy { TRUE, FALSE }
 
 @data
 overcast, 1, 2 ,FALSE

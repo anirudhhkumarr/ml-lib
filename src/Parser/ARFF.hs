@@ -1,4 +1,4 @@
-module Input (parseARFF) where 
+module Parser.ARFF (parseARFF) where 
 
 import Text.ARFF as ARFF
 import System.IO  

@@ -1,8 +1,8 @@
-module NBClassifier(buildNBClassifier,testClassifier,predictClasses) where
+module Classifier.NBClassifier(buildNBClassifier,testClassifier,predictClasses) where
 
 import Text.ARFF as ARFF
-import Test
-import Train
+import Classifier.Test
+import Classifier.Train
 import System.IO  
 import Control.Monad
 

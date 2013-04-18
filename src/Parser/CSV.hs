@@ -1,5 +1,5 @@
-
-module CSV(parseCSV) where
+{-# LANGUAGE DoAndIfThenElse #-}
+module Parser.CSV(parseCSV) where
 
 import qualified Data.Text as Dtext
 import Text.ParserCombinators.Parsec
@@ -10,7 +10,7 @@ import Text.ARFF as ARFF
 import qualified Data.ByteString as BS
 import Data.ByteString.Char8(pack,unpack)
 
-csvFile = endBy CSV.line eol
+csvFile = endBy Parser.CSV.line eol
 line = sepBy cell (char ',')
 cell = many (noneOf ",\n")
 eol = char '\n'
