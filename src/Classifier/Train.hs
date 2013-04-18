@@ -156,7 +156,7 @@ intialize = map foo
                 foo a = case (dataType a) of 
                         Nominal xs -> NOMINAL $ intializeNominal xs
                         Numeric -> NUMERIC (0.0,0.0)        
-				-- | foo::Attribute->AttributeInfo
+                --  foo::Attribute->AttributeInfo
 				-- foo intialize values for Nominal and Numeric features accordingly.
 
 intializeNominal:: [BS.ByteString]-> (Map.Map BS.ByteString Double)
@@ -177,7 +177,7 @@ updateClassInfo info object = zipWith bar info object
                               where
                                 bar (NUMERIC (x,y)) (NumericValue a) = NUMERIC (x+a,y+a^2)
                                 bar (NOMINAL xs) (NominalValue a) = NOMINAL $ Map.adjust (1+) a xs
-                                -- | bar::AttributeInfo->AttributeValue->AttributeInfo
+                                --  bar::AttributeInfo->AttributeValue->AttributeInfo
 
 finalizeInfo::([AttributeInfo],Double)->[AttributeInfo]
 finalizeInfo ((NOMINAL x):xs,n) = (NOMINAL $ Map.map (/n) x):finalizeInfo (xs,n)

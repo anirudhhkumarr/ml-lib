@@ -15,7 +15,9 @@ import qualified Data.Attoparsec.Text as Text
 --(Fail !ByteString [String] String) => The parse failed. The ByteString is the input that had not yet been consumed when the failure occurred. The 						[String] is a list of contexts in which the error occurred. The String is the message describing the error, 						if any.
 --Partial (ByteString -> Result r)   => Supply this continuation with more input so that the parser can resume. To indicate that no more input is 						available, use an empty string.
 --Done !ByteString r		     =>	The parse succeeded. The ByteString is the input that had not yet been consumed (if any) when the parse 					succeeded.
-		
+
+-- | PARSEARFF is supplied contents of input file incrementally. If no error is encountered in parsing, it returns Partial output if it expects more
+-- input else returns output. If an error is encountered returns a detailed error message with suggestion to correct the error.
 parseARFF input = parse arff input    
 ------------------------------------------------------------------------------------------------------------
 

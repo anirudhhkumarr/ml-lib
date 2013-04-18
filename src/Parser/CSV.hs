@@ -20,6 +20,11 @@ eol = char '\n'
 parseCSVt :: String -> String -> Either ParseError [[String]]
 parseCSVt input filename = parse csvFile ("Error in : "++filename) input
 
+-- | ParseCSV takes two arguments : contents of input file and its name. It returns the parsed data in the same format as ARFF file by creating 
+-- a pseudo header. The pseudo header is created by parsing the file and inferencing the type of attributes. The function also checks for malformed 
+-- data by checking that no of elemnts in every row is same. The function also handles any missing attributes by returning Nothing 
+-- for missing attributes. Any parse errors are displayed with line no. information to help user pinpoint the error quickly.
+
 parseCSV:: String -> String -> IO (Either String (Header, [[Maybe AttributeValue]]) )
 
 parseCSV input filename = 
