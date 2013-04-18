@@ -10,6 +10,8 @@ import Text.ARFF as ARFF
 import qualified Data.ByteString as BS
 import Data.ByteString.Char8(pack,unpack)
 
+import Data.List(sort)
+
 csvFile = endBy Parser.CSV.line eol
 line = sepBy cell (char ',')
 cell = many (noneOf ",\n")
@@ -96,7 +98,7 @@ getType :: [String] -> IO AttributeType
 getType x = do
                 ftype <- examineFeature x 
                 case ftype of 
-                        Left a -> return (Nominal (getNominalList x []))
+                        Left a -> return (Nominal (sort (getNominalList x [])))
                         Right a -> return Numeric
                         
 

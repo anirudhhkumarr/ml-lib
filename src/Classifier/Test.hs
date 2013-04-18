@@ -3,7 +3,7 @@ module Classifier.Test (test,getClasses) where
 
 import Parser.ARFF(parseARFF)
 import Parser.CSV(parseCSV)
-import Classifier.Train(AttributeInfo(..),getContextString) 
+import Classifier.Train(AttributeInfo(..),parseLinebyLine,getContextString) 
 import Text.ARFF as ARFF
 import System.IO  
 import Control.Monad
@@ -34,15 +34,16 @@ import Data.List
 --Data.Function
 import Data.Function
 
+-- | Data type for Missing Values which is used in filling missing values 
+data MissingValue = NumValue Double -- ^ Value constructor corresponding to Numeric missing values
+                   |NomValue (Map.Map BS.ByteString Double) -- ^ Value constructor corresponding to Nominal missing values 
 
-data MissingValue = NumValue Double
-                   |NomValue (Map.Map BS.ByteString Double)
-
+-- | Show instance for datatype MissingValue
 instance (Show MissingValue) where
     show (NomValue x) = show x
     show (NumValue x) = show x
 
-----------------------------------------------------------------------------------------------------------------
+-- | This function takes a classifier and testfile as input and returns predicted classes and orginal classes for each object in testfile.
 test::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String (([AttributeValue],[AttributeValue])))
 test (trainHeader,classifier) testFilePath = 
     do 
@@ -51,7 +52,7 @@ test (trainHeader,classifier) testFilePath =
         if (last $ splitOn "." testFilePath) == "arff" then
             let
                 (x:xs) = lines testContents
-                resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1
+                resultExpr = parseLinebyLine testFilePath (parseARFF $ pack (x++"\n")) xs x 1
             in
                 case resultExpr of       
                     Right (Done _ k) -> if testHeader == trainHeader 
@@ -89,7 +90,6 @@ test (trainHeader,classifier) testFilePath =
         else
             return (Left ("The specified file format "++(last $ splitOn "." testFilePath) ++ "is not supported\n"))
 
-------------------------------------------------------------------------------------------------
 getClasses::(Header,[(BS.ByteString,[AttributeInfo])])->FilePath->IO (Either String ([AttributeValue]))
 getClasses (trainHeader,classifier) testFilePath = 
     do 
@@ -98,7 +98,7 @@ getClasses (trainHeader,classifier) testFilePath =
         if (last $ splitOn "." testFilePath) == "arff" then
             let
                 (x:xs) = lines testContents
-                resultExpr = parseLinebyLine (parseARFF $ pack (x++"\n")) xs x 1            
+                resultExpr = parseLinebyLine testFilePath (parseARFF $ pack (x++"\n")) xs x 1            
             in
                 case resultExpr of       
                     Right (Done _ k) ->
@@ -167,31 +167,13 @@ getClasses (trainHeader,classifier) testFilePath =
             return (Left ("The specified file format "++(last $ splitOn "." testFilePath) ++ "is not supported\n"))                    
 
 
-------------------------------------------------------------------------------------------------------------
-        
+-- | Converts Nothings to "?"        
 convertNothing::[Maybe AttributeValue]->[AttributeValue]
 convertNothing = map foo 
                     where
                         foo (Just x) = x
                         foo (Nothing) = NominalValue $ pack "?"
                         
-parseLinebyLine:: Result (Header, [[Maybe AttributeValue]]) -> [String] -> String -> Int -> Either String (Result (Header, [[Maybe AttributeValue]]))
-parseLinebyLine initval (x:xs) prevline lineno = 
-    case initval of 
-        Partial k-> parseLinebyLine (k  $ pack (x++"\n")) xs x (lineno+1)
-        Fail remInput contexts msg ->
-            Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++ getContextString contexts)
-
-        k -> Right k
-                              
-parseLinebyLine initval [] prevline lineno = 
-    case initval of
-        Partial k-> Right $ k BS.empty
-        Fail remInput contexts msg -> 
-            Left ("In Test Data:\nInvalid row supplied at line no "++(show lineno)++"\n" ++ prevline++"\n"++  getContextString contexts)
-            
-        k-> Right k        
-
 contextHeaderError::Header->Header->String
 contextHeaderError trainHeader testHeader = if title trainHeader /= title testHeader
                                             then "Relation name in testfile doen't match with relation name in train file" 
